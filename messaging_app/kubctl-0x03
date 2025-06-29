@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# kubctl-0x03 - Perform a rolling update with monitoring and uptime check
+
+set -e
+
+DEPLOYMENT="django-blue"
+SERVICE_URL="http://localhost:8000"  # Update this if using Ingress or NodePort
+
+echo ">>> Applying updated blue deployment with image version 2.0..."
+kubectl apply -f messaging_app/blue_deployment.yaml
+
+echo ">>> Monitoring rollout status..."
+kubectl rollout status deployment/$DEPLOYMENT
+
+echo ">>> Starting uptime test (10 requests during rollout)..."
+for i in {1..10}; do
+    curl -s -o /dev/null -w "[$(date +%T)] Status: %{http_code}\n" "$SERVICE_URL"
+    sleep 1
+done
+
+echo ">>> Checking current pods after update:"
+kubectl get pods -l version=blue

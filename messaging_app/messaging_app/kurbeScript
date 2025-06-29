@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# kurbeScript - Script to start Kubernetes cluster and verify setup
+
+set -e
+
+echo ">>> Checking if minikube is installed..."
+if ! command -v minikube &> /dev/null; then
+    echo "❌ Minikube is not installed. Please install it first: https://minikube.sigs.k8s.io/docs/start/"
+    exit 1
+fi
+
+echo "✅ Minikube is installed."
+
+echo ">>> Starting Minikube cluster..."
+minikube start
+
+echo ">>> Verifying that the cluster is running..."
+kubectl cluster-info
+
+echo ">>> Retrieving available pods in all namespaces..."
+kubectl get pods --all-namespaces
+
+echo "✅ Kubernetes cluster setup and pod retrieval complete."

@@ -1,0 +1,8 @@
+# Enable Ingress in Minikube (if using Minikube)
+minikube addons enable ingress
+
+# OR install NGINX Ingress controller manually for a non-Minikube cluster
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.9.4/deploy/static/provider/cloud/deploy.yaml
+
+# Apply the ingress resource to expose the Django app
+kubectl apply -f messaging_app/ingress.yaml

@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# kubctl-0x01 - Scale Django app, run load test, monitor usage
+
+set -e
+
+DEPLOYMENT_NAME="django-messaging-app"
+SERVICE_NAME="messaging-app-service"
+NAMESPACE="default"
+REPLICAS=3
+
+echo ">>> Scaling deployment '$DEPLOYMENT_NAME' to $REPLICAS replicas..."
+kubectl scale deployment $DEPLOYMENT_NAME --replicas=$REPLICAS --namespace=$NAMESPACE
+
+echo ">>> Waiting for all replicas to be available..."
+kubectl rollout status deployment/$DEPLOYMENT_NAME --namespace=$NAMESPACE
+
+echo ">>> Listing all pods:"
+kubectl get pods -l app=messaging-app --namespace=$NAMESPACE
+
+# Load test using wrk (requires access to the service)
+echo ">>> Starting wrk load test..."
+
+# Option 1: If exposed via NodePort or Ingress, replace this with real IP and port.
+# You must replace the URL below with how the app is exposed.
+TEST_URL="http://localhost:8000"
+
+if command -v wrk &> /dev/null; then
+    wrk -t4 -c50 -d10s $TEST_URL
+else
+    echo "⚠️ wrk not installed. Install with: sudo apt install wrk"
+fi
+
+# Monitor resource usage
+echo ">>> Resource usage (CPU/Memory):"
+kubectl top pods --namespace=$NAMESPACE || echo "⚠️ Metrics server may not be installed."

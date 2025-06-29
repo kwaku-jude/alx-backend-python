@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# kubctl-0x02 - Deploy blue and green versions and check logs
+
+set -e
+
+echo ">>> Applying blue deployment..."
+kubectl apply -f messaging_app/blue_deployment.yaml
+
+echo ">>> Applying green deployment..."
+kubectl apply -f messaging_app/green_deployment.yaml
+
+echo ">>> Applying service (initially points to blue)..."
+kubectl apply -f messaging_app/kubeservice.yaml
+
+echo ">>> Waiting for pods to be ready..."
+kubectl rollout status deployment/django-blue
+kubectl rollout status deployment/django-green
+
+echo ">>> Checking logs for green version..."
+GREEN_POD=$(kubectl get pods -l version=green -o jsonpath="{.items[0].metadata.name}")
+kubectl logs "$GREEN_POD"
+
+echo "✅ Blue-Green deployments applied. Edit 'kubeservice.yaml' to point to green when ready."
