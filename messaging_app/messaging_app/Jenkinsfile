@@ -1,0 +1,70 @@
+pipeline {
+    agent any
+
+    environment {
+        VENV_DIR = 'venv'
+        DOCKER_IMAGE = 'brianmaleek/messaging_app:latest' // <-- Replace with your Docker Hub username
+        DOCKERHUB_CREDENTIALS = 'brianmaleek'      // <-- Replace with your Jenkins Docker Hub credentials ID
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                // Checkout code from GitHub
+                git credentialsId: '${env.GITHUB_CREDENTIALS_ID}', url: 'https://github.com/brianmaleek/alx-backend-python/tree/main/messaging_app.git'
+            }
+        }
+        stage('Show Git Branch') {
+            steps {
+                sh 'git branch'
+                sh 'git rev-parse --abbrev-ref HEAD'
+            }
+        }
+        stage('Set up Python & Install Dependencies') {
+            steps {
+                // Use ShiningPanda to create a virtualenv and install requirements
+                sh '''
+                    python3 -m venv ${VENV_DIR}
+                    . ${VENV_DIR}/bin/activate
+                    pip3 install --upgrade pip
+                    pip3 install -r messaging_app/requirements.txt
+                '''
+            }
+        }
+        stage('Run Tests') {
+            steps {
+                // Run pytest and generate a JUnit XML report
+                sh '''
+                    . ${VENV_DIR}/bin/activate
+                    pytest messaging_app/tests --junitxml=report.xml
+                '''
+            }
+            post {
+                always {
+                    // Archive the test report
+                    junit 'report.xml'
+                }
+            }
+        }
+        stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t ${DOCKER_IMAGE} messaging_app/'
+            }
+        }
+        stage('Push Docker Image') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS}", usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_PASS')]) {
+                    sh '''
+                        echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USER" --password-stdin
+                        docker push ${DOCKER_IMAGE}
+                        docker logout
+                    '''
+                }
+            }
+        }
+    }
+    options {
+        // Allow manual trigger only
+        disableConcurrentBuilds()
+    }
+}

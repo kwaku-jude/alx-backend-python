@@ -1,0 +1,35 @@
+# This file defines the blue deployment and service for the messaging app.
+# To switch traffic between blue and green deployments, update the 'version' field in the Service selector.
+# Only one deployment (blue or green) should match the Service selector at a time for zero-downtime updates.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: messaging-app-blue
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: messaging-app
+      version: blue
+  template:
+    metadata:
+      labels:
+        app: messaging-app
+        version: blue
+    spec:
+      containers:
+      - name: messaging-app
+        image: messaging-app:v1.0.0
+        ports:
+        - containerPort: 8000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: messaging-app-service
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
+  type: ClusterIP

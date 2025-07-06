@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# kurbeScript: A script to set up a Kubernetes environment using Minikube and kubectl
+
+# Exit immediately if a command exits with a non-zero status
+set -e
+
+echo "Checking if Minikube is installed..."
+if ! command -v minikube &> /dev/null; then
+    echo "Minikube is not installed. Installing Minikube..."
+    # Install Minikube
+    curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+    sudo install minikube-linux-amd64 /usr/local/bin/minikube
+    rm minikube-linux-amd64
+    echo "Minikube installed successfully."
+else
+    echo "Minikube is already installed."
+fi
+
+# Install kubectl if not already installed
+echo "Checking if kubectl is installed..."
+if ! command -v kubectl &> /dev/null; then
+    echo "kubectl is not installed. Installing kubectl..."
+    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+    chmod +x kubectl
+    sudo mv kubectl /usr/local/bin/
+    echo "kubectl installed successfully."
+else
+    echo "kubectl is already installed."
+fi
+
+# Start Minikube
+echo "Starting Minikube..."
+minikube start
+
+# Check if Minikube started successfully
+if minikube status | grep -q "host: Running"; then
+    echo "Minikube started successfully."
+else
+    echo "Failed to start Minikube. Please check the logs for more details."
+    exit 1
+fi
+
+# Verify cluster status
+echo "Verifying cluster status..."
+if kubectl cluster-info; then
+    echo "Cluster is up and running."
+else
+    echo "Cluster is not running. Please check the logs for more details."
+    exit 1
+fi
+
+# Get available pods
+echo "Getting available pods..."
+if kubectl get pods --all-namespaces; then
+    echo "Pods retrieved successfully."
+else
+    echo "Failed to retrieve pods. Please check the logs for more details."
+    exit 1
+fi
+
+echo "kubernetes setup completed successfully."

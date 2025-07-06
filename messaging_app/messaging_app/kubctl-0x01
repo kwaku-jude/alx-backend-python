@@ -1,0 +1,32 @@
+#! /usr/bin/env bash
+
+# kubctl-0x01 - Django App Scaling and Load Testing Script
+
+set -e
+
+echo "=== Scaling Django App ==="
+
+# Scale deployment to 3 replicas
+echo "Scaling messaging-app:latest to 3 replicas..."
+kubectl scale deployment messaging-app --replicas=3
+
+# Wait for pods to be ready
+echo "Waiting for pods..."
+kubectl rollout status deployment/messaging-app
+
+# Verify pods are running
+echo "Current pods:"
+kubectl get pods -n default -l app=messaging-app
+
+# Monitor resources
+echo "Resource usage:"
+kubectl top pods -n default -l app=messaging-app 2>/dev/null || echo "Metrics not available"
+
+# Load testing the application
+echo "=== Load Testing the Application ==="
+wrk http://<minikube_ip>:<nodePort>
+
+# Cleanup
+kill $PF_PID 2>/dev/null || true
+
+echo "=== Complete ==="
